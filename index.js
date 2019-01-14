@@ -11,16 +11,26 @@ app.use(morgan('dev'))
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))
 
-// Make a GET
-// Make a GET with a query string
+// Make a GET                                     
+// Make a GET with a query string                 
 // Make a POST
 // Make a PUT
 // Make a DELETE
 // Send responses with status codes
 // Error handling
 
+
 app.get('/dogs', (req, res, next) => {
-  res.send(dogs)
+  let { age } = req.query
+  if (age) {
+    for (const name in dogs) {
+      if (dogs[name].age == age) {
+        res.send(dogs[name])
+      }
+    }
+  } else {
+    res.send(dogs)
+  }
 })
 
 app.post('/dogs', (req, res, next) => {
@@ -36,16 +46,25 @@ app.post('/dogs', (req, res, next) => {
 app.put('/dogs/:name', (req, res, next) => {
   let { name } = req.params
   let dogData = req.body
-
   if (dogs[name]) {
-    for (let key in dogs[name]) {
-      if (dogData[key]) {
+    for (let key in dogData) {
+      if (dogs[name][key]) {
         dogs[name][key] = dogData[key]
       }
     }
-    res.send(dogs[name])
+    return res.send(dogs)
   } else {
-    res.send('This doggo does not exists in our database')
+    return res.send('This doggo does not exists in our database')
+  }
+})
+
+app.delete('/dogs/:name', (req, res, next) => {
+  let { name } = req.params
+  if (dogs[name]) {
+    delete dogs[name]
+    res.send(dogs)
+  } else {
+    res.send('Could not delete this doggo; it doesn\'t exists in our database ')
   }
 })
 
