@@ -1,79 +1,94 @@
-const express = require('express')
-const morgan = require('morgan')
-const app = express()
+const express = require('express');
+const morgan = require('morgan');
+const app = express();
 const PORT = 3000;
 
-const dogs = require('./dogs')
+const myMiddlewareFunction = require('./utils.js');
+const dogs = require('./dogs');
 
-app.use(morgan('dev'))
+
+app.use(morgan('dev'));
 
 // Body Parsing Middleware
-app.use(express.json())
-app.use(express.urlencoded({extended: true}))
+app.use(express.json());
+app.use(express.urlencoded({extended: true}));
 
-// Make a GET                                     
-// Make a GET with a query string                 
-// Make a POST
-// Make a PUT
-// Make a DELETE
-// Send responses with status codes
-// Error handling
+// Custom middleware function
+app.use(myMiddlewareFunction);
 
-
-app.get('/dogs', (req, res, next) => {
-  let { age } = req.query
-  if (age) {
+// Get a dog using a query string and req parameter
+app.get('/dogs/:name', (req, res, next) => {
+  let { name } = req.params;
+  let { age } = req.query;
+  if (dogs[name] && age) {
     for (const name in dogs) {
       if (dogs[name].age == age) {
-        res.send(dogs[name])
+        res.send(dogs[name]);
       }
     }
   } else {
-    res.send(dogs)
+    let err = new Error('This doggo does not exists in our database');
+    err.status = 404;
+    next(err);
   }
 })
 
+// Get all dogs
+app.get('/dogs', (req, res, next) => {
+  res.send(dogs);
+})
+
+// Create a dog
 app.post('/dogs', (req, res, next) => {
   let { name } = req.body;
   if (dogs[name]) {
-    res.send('This doggo already exists in our database')
+    let err = new Error('This doggo already exists in our database');
+    err.status = 409;
+    next(err);
   } else {
-    dogs[name] = req.body
-    res.send(dogs)
+    dogs[name] = req.body;
+    res.send(dogs);
   }
 })
 
+// Update a dog by passing it's name
 app.put('/dogs/:name', (req, res, next) => {
-  let { name } = req.params
-  let dogData = req.body
+  let { name } = req.params;
+  let dogData = req.body;
   if (dogs[name]) {
     for (let key in dogData) {
       if (dogs[name][key]) {
-        dogs[name][key] = dogData[key]
+        dogs[name][key] = dogData[key];
       }
     }
-    return res.send(dogs)
-  } else {
-    return res.send('This doggo does not exists in our database')
-  }
-})
-
-app.delete('/dogs/:name', (req, res, next) => {
-  let { name } = req.params
-  if (dogs[name]) {
-    delete dogs[name]
     res.send(dogs)
   } else {
-    res.send('Could not delete this doggo; it doesn\'t exists in our database ')
+    let err = new Error('This doggo does not exists in our database');
+    err.status = 404;
+    next(err);
   }
 })
 
+// Delete a dog by passing it's name
+app.delete('/dogs/:name', (req, res, next) => {
+  let { name } = req.params;
+  if (dogs[name]) {
+    delete dogs[name];
+    res.send(dogs);
+  } else {
+    let err = new Error('Could not delete this doggo; it doesn\'t exists in our database');
+    err.status = 409;
+    next(err);
+  }
+});
+
+// Default Error Handling Function
 app.use((err, req, res, next) => {
   console.error(`Something went wrong: ${err}`);
   console.error(err.stack);
   res.status(err.status || 500).send(err.message || 'Internal server error.');
-})
+});
 
 app.listen(PORT, () => {
-  console.log(`Listening on Port # ${PORT}`)
-})
+  console.log(`Listening on Port # ${PORT}`);
+});
